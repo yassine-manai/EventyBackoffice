@@ -1,67 +1,80 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, X } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Eye } from 'lucide-react';
+import axios from 'axios';
+import '../services/User_Service';
+
+const API_BASE_URL = 'http://127.0.0.1:5050/backoffice';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userEvents, setUserEvents] = useState([]);
   const [formData, setFormData] = useState({
-    Email: '',
-    Name: '',
-    EventID: '',
+    email: '',
+    name: '',
+    event_id: [],
   });
 
-  // Simulated data
   useEffect(() => {
-    const fakeUsers = [
-      {
-        UserID: 1,
-        Email: 'john.doe@example.com',
-        Name: 'John Doe',
-        EventID: 101,
-      },
-      {
-        UserID: 2,
-        Email: 'jane.smith@example.com',
-        Name: 'Jane Smith',
-        EventID: 102,
-      },
-      {
-        UserID: 3,
-        Email: 'alice.johnson@example.com',
-        Name: 'Alice Johnson',
-        EventID: 103,
-      },
-    ];
-    setUsers(fakeUsers);
+    fetchUsers();
   }, []);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (selectedUser) {
-      // Update existing user
-      setUsers(users.map((user) =>
-        user.UserID === selectedUser.UserID ? formData : user
-      ));
-    } else {
-      // Add new user
-      setUsers([...users, { ...formData, UserID: users.length + 1 }]);
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/get_users`);
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
     }
-    handleCloseModal();
+  };
+
+  const fetchUserEvents = async (eventIds) => {
+    try {
+      const eventRequests = eventIds.map(id =>
+        axios.get(`${API_BASE_URL}/get_events?event_id=${id}`)
+      );
+      const eventResponses = await Promise.all(eventRequests);
+      const events = eventResponses.map(res => res.data);
+      setUserEvents(events);
+    } catch (error) {
+      console.error('Error fetching user events:', error);
+      setUserEvents([]);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const formattedEventIds = formData.event_id
+      .split(',')
+      .map(id => parseInt(id.trim())); // Convert string to array
+    const updatedFormData = { ...formData, event_id: formattedEventIds };
+
+    try {
+      if (selectedUser) {
+        await axios.put(
+          `${API_BASE_URL}/update_user/${selectedUser.user_id}`,
+          updatedFormData
+        );
+      } else {
+        await axios.post(`${API_BASE_URL}/add_user`, updatedFormData);
+      }
+      fetchUsers();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving user:', error.response ? error.response.data : error);
+    }
   };
 
   const handleOpenModal = (user = null) => {
     if (user) {
       setSelectedUser(user);
-      setFormData(user);
+      setFormData({ ...user, event_id: user.event_id.join(', ') });
     } else {
       setSelectedUser(null);
-      setFormData({
-        Email: '',
-        Name: '',
-        EventID: '',
-      });
+      setFormData({ email: '', name: '', event_id: '' });
     }
     setIsModalOpen(true);
   };
@@ -69,11 +82,7 @@ const Users = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedUser(null);
-    setFormData({
-      Email: '',
-      Name: '',
-      EventID: '',
-    });
+    setFormData({ email: '', name: '', event_id: '' });
   };
 
   const handleDelete = (user) => {
@@ -81,72 +90,83 @@ const Users = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const confirmDelete = () => {
-    setUsers(users.filter((user) => user.UserID !== selectedUser.UserID));
-    setIsDeleteModalOpen(false);
-    setSelectedUser(null);
+  const confirmDelete = async () => {
+    try {
+      await axios.delete(`${API_BASE_URL}/delete_user/${selectedUser.user_id}`);
+      fetchUsers();
+      setIsDeleteModalOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
+  };
+
+  const handleViewUser = async (user) => {
+    setSelectedUser(user);
+    await fetchUserEvents(user.event_id);
+    setIsViewModalOpen(true);
+  };
+
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <br></br>
-        <br></br>
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-3xl font-bold text-gray-800">Users</h2>
+        <br />
+        <br />
+        <div className="flex justify-between items-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-800">Users Management</h2>
           <button
             onClick={() => handleOpenModal()}
-            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center"
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
           >
-            <Plus className="w-5 h-5 mr-2" />
-            Add User
+            <Plus className="w-5 h-5" /> Add User
           </button>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Event ID
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Email</th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-600">Name</th>
+                  <th className="px-6 py-4 text-right text-sm font-semibold text-gray-600">Actions</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-200">
                 {users.map((user) => (
-                  <tr key={user.UserID} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.Email}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.Name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.EventID}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button
-                        onClick={() => handleOpenModal(user)}
-                        className="text-blue-600 hover:text-blue-900 mr-4"
-                      >
-                        <Pencil className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(user)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                  <tr key={user.email} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 text-sm text-gray-800">{user.email}</td>
+                    <td className="px-6 py-4 text-sm text-gray-800">{user.name}</td>
+
+                    <td className="px-6 py-4">
+                      <div className="flex justify-end gap-3">
+                        <button
+                          onClick={() => handleViewUser(user)}
+                          className="text-blue-600 hover:text-blue-800 transition-colors"
+                        >
+                          <Eye className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleOpenModal(user)}
+                          className="text-green-600 hover:text-green-800   transition-colors"
+                        >
+                          <Pencil className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user)}
+                          className="text-red-600 hover:text-red-800 transition-colors"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -154,114 +174,157 @@ const Users = () => {
             </table>
           </div>
         </div>
+      </div>
 
-        {/* Add/Edit Modal */}
-        {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg w-full max-w-md">
-              <div className="flex justify-between items-center p-6 border-b">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {selectedUser ? 'Edit User' : 'Add New User'}
-                </h3>
+      {/* Add/Edit Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-800">
+                {selectedUser ? 'Edit User' : 'Add New User'}
+              </h3>
+              <button
+                onClick={handleCloseModal}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
                 <button
+                  type="button"
                   onClick={handleCloseModal}
-                  className="text-gray-400 hover:text-gray-500"
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
                 >
-                  <X className="w-5 h-5" />
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  {selectedUser ? 'Update' : 'Add'} User
                 </button>
               </div>
-              <form onSubmit={handleSubmit} className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Email
-                    </label>
-                    <input
-                      type="email"
-                      name="Email"
-                      value={formData.Email}
-                      onChange={(e) => setFormData({ ...formData, Email: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm p-2 border"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      name="Name"
-                      value={formData.Name}
-                      onChange={(e) => setFormData({ ...formData, Name: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm p-2 border"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">
-                      Event ID
-                    </label>
-                    <input
-                      type="text"
-                      name="EventID"
-                      value={formData.EventID}
-                      onChange={(e) => setFormData({ ...formData, EventID: e.target.value })}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm p-2 border"
-                      required
-                    />
-                  </div>
-                </div>
-                <div className="mt-6 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={handleCloseModal}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700"
-                  >
-                    {selectedUser ? 'Update' : 'Add'} User
-                  </button>
-                </div>
-              </form>
-            </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Delete Confirmation Modal */}
-        {isDeleteModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-lg w-full max-w-md">
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Delete User
-                </h3>
-                <p className="text-gray-500">
-                  Are you sure you want to delete this user? This action cannot be undone.
-                </p>
-                <div className="mt-6 flex justify-end space-x-3">
-                  <button
-                    onClick={() => setIsDeleteModalOpen(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmDelete}
-                    className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
-                  >
-                    Delete
-                  </button>
-                </div>
+      {/* View Modal */}
+      {isViewModalOpen && selectedUser && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-800">User Details</h3>
+              <button
+                onClick={() => setIsViewModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-6">
+              <div>
+                <p className="text-sm font-medium text-gray-500">Email</p>
+                <p className="text-gray-800">{selectedUser.email}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Name</p>
+                <p className="text-gray-800">{selectedUser.name}</p>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500 mb-3">Assigned Events</p>
+                {userEvents.length > 0 ? (
+                  <div className="grid gap-4">
+                    {userEvents.map((event) => (
+                      <div key={event.event_id} className="bg-gray-50 p-4 rounded-lg">
+                        <div className="flex gap-4">
+                          <div className="w-32 h-32 flex-shrink-0">
+                            <img
+                              src={event.image}
+                              alt={event.title}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          </div>
+                          <div className="flex-grow">
+                            <h4 className="text-lg font-semibold text-gray-800 mb-2">
+                              {event.title}
+                            </h4>
+                            <p className="text-gray-600 mb-1">
+                              {formatDate(event.start_date)} to {formatDate(event.end_date)}
+                            </p>
+                            <p className="text-gray-600">{event.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p>No events assigned.</p>
+                )}
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-semibold text-gray-800">Confirm Delete</h3>
+              <button
+                onClick={() => setIsDeleteModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-700">
+                Are you sure you want to delete this user?
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Confirm Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

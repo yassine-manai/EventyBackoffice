@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
 import { Link } from "react-router-dom";
 import {
   Users,
@@ -45,45 +46,38 @@ const StatCard = ({ title, value, icon: Icon, bgColor, textColor, link, trend, l
   </Link>
 );
 
-const QuickStats = () => (
-  <div className="grid grid-cols-2 gap-4 mb-6">
-    <div className="bg-indigo-50 rounded-lg p-4 flex items-center justify-between">
-      <div>
-        <p className="text-sm text-indigo-600 font-medium">Active Now</p>
-        <p className="text-2xl font-bold text-indigo-700">28</p>
-      </div>
-      <div className="bg-indigo-100 p-2 rounded-full">
-        <Users className="w-5 h-5 text-indigo-600" />
-      </div>
-    </div>
-    <div className="bg-emerald-50 rounded-lg p-4 flex items-center justify-between">
-      <div>
-        <p className="text-sm text-emerald-600 font-medium">Today's Events</p>
-        <p className="text-2xl font-bold text-emerald-700">12</p>
-      </div>
-      <div className="bg-emerald-100 p-2 rounded-full">
-        <Calendar className="w-5 h-5 text-emerald-600" />
-      </div>
-    </div>
-  </div>
-);
-
 const DashboardStats = () => {
   const [stats, setStats] = useState({
     categories: { value: 0, trend: 0 },
     events: { value: 0, trend: 0 },
     users: { value: 0, trend: 0 },
   });
+
+  const [time, setTime] = useState(new Date().toLocaleTimeString());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const interval = setInterval(() => {
+      setTime(new Date().toLocaleTimeString());
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+
+  useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetching the data from the API
+        const categoriesResponse = await axios.get('http://127.0.0.1:5050/backoffice/get_categories');
+        const eventsResponse = await axios.get('http://127.0.0.1:5050/backoffice/get_events');
+        const usersResponse = await axios.get('http://127.0.0.1:5050/backoffice/get_users');
+
         setStats({
-          categories: { value: 8, trend: 12.5 },
-          events: { value: 8, trend: -5.2 },
-          users: { value: 8, trend: 8.7 },
+          categories: { value: categoriesResponse.data.length, trend: 12.5 },
+          events: { value: eventsResponse.data.length, trend: -5.2 },
+          users: { value: usersResponse.data.length, trend: 8.7 },
         });
       } catch (err) {
         setError("Error loading dashboard data");
@@ -129,10 +123,9 @@ const DashboardStats = () => {
           </div>
           <div className="text-right">
             <p className="text-sm text-gray-500">Current Time</p>
-            <p className="text-lg font-semibold text-gray-700">{new Date().toLocaleTimeString()}</p>
+            <p className="text-lg font-semibold text-gray-700">{time}</p>
           </div>
         </div>
-        <QuickStats />
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
