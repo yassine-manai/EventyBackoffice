@@ -12,6 +12,8 @@ const Users = () => {
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [userEvents, setUserEvents] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [filterName, setFilterName] = useState('');
   const [formData, setFormData] = useState({
     email: '',
     name: '',
@@ -107,8 +109,9 @@ const Users = () => {
     setIsViewModalOpen(true);
   };
 
+  
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    return new Date(dateString).toLocaleDateString('fr-TN', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -208,6 +211,16 @@ const Users = () => {
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="text"
+                  value="1234567"
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   required
                 />

@@ -8,6 +8,7 @@ import Users from './pages/Users';
 import NotFound from './pages/NotFound';
 import Login from './auth/Login';
 import Logout from './auth/Logout';
+import Guests from './pages/Guests';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -35,6 +36,7 @@ const App = () => {
             <Route path="/categories" element={<Categories />} />
             <Route path="/events" element={<Events />} />
             <Route path="/users" element={<Users />} />
+            <Route path="/guests" element={<Guests />} />
             <Route path="*" element={<NotFound />} />
             <Route path="/logout" element={<Logout />} />
           </Routes>

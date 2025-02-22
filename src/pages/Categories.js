@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X } from 'lucide-react';
-import { fetchCategories, addCategory, updateCategory, deleteCategory } from '../services/CategoryService';
-import '../services/Category_Service';
+import axios from 'axios';
 
+const API_BASE_URL = 'http://127.0.0.1:5050/backoffice';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
@@ -12,23 +12,31 @@ const Categories = () => {
   const [formData, setFormData] = useState({ category_name: '' });
 
   useEffect(() => {
-    loadCategories();
+    fetchCategories();
   }, []);
 
-  const loadCategories = async () => {
-    const data = await fetchCategories();
-    setCategories(data);
+  const fetchCategories = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/get_categories`);
+      setCategories(response.data);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (selectedCategory) {
-      await updateCategory(selectedCategory.category_id, formData);
-    } else {
-      await addCategory(formData);
+    try {
+      if (selectedCategory) {
+        await axios.put(`${API_BASE_URL}/update_category/${selectedCategory.category_id}`, formData);
+      } else {
+        await axios.post(`${API_BASE_URL}/add_category`, formData);
+      }
+      fetchCategories();
+      handleCloseModal();
+    } catch (error) {
+      console.error('Error saving category:', error);
     }
-    loadCategories();
-    handleCloseModal();
   };
 
   const handleOpenModal = (category = null) => {
@@ -49,17 +57,20 @@ const Categories = () => {
   };
 
   const handleDelete = async () => {
-    if (selectedCategory) {
-      await deleteCategory(selectedCategory.category_id);
-      loadCategories();
+    try {
+      await axios.delete(`${API_BASE_URL}/delete_category/${selectedCategory.category_id}`);
+      fetchCategories();
       setIsDeleteModalOpen(false);
+    } catch (error) {
+      console.error('Error deleting category:', error);
     }
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-6xl mx-auto">
-        <br /><br />
+      <br /><br />
+
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-3xl font-bold text-gray-800">Categories</h2>
           <button onClick={() => handleOpenModal()} className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center">
@@ -96,6 +107,42 @@ const Categories = () => {
             </table>
           </div>
         </div>
+
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg w-full max-w-md">
+              <div className="flex justify-between items-center p-6 border-b">
+                <h3 className="text-lg font-semibold text-gray-900">{selectedCategory ? 'Edit Category' : 'Add New Category'}</h3>
+                <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-500">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="p-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Category Name</label>
+                  <input type="text" value={formData.category_name} onChange={(e) => setFormData({ category_name: e.target.value })} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm p-2 border" required />
+                </div>
+                <div className="mt-6 flex justify-end space-x-3">
+                  <button type="button" onClick={handleCloseModal} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                  <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-700">{selectedCategory ? 'Update' : 'Add'} Category</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {isDeleteModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-lg w-full max-w-md p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Category</h3>
+              <p className="text-gray-500">Are you sure you want to delete this category? This action cannot be undone.</p>
+              <div className="mt-6 flex justify-end space-x-3">
+                <button onClick={() => setIsDeleteModalOpen(false)} className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+                <button onClick={handleDelete} className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700">Delete</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

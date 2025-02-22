@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { LogIn, Menu, X, Folder, Users, TvMinimalPlay, PartyPopper } from 'lucide-react';
+import { LogIn, Menu, X, Folder, UserCheck2, UserRoundXIcon, TvMinimalPlay, PartyPopper } from 'lucide-react';
 import { DashboardIcon } from '@radix-ui/react-icons';
 
 const Navbar = ({ isAuthenticated, role, onLogout }) => {
@@ -28,7 +28,8 @@ const Navbar = ({ isAuthenticated, role, onLogout }) => {
     { label: 'Dashboard', path: '/dashboard', icon: DashboardIcon },
     { label: 'Events', path: '/events', icon: TvMinimalPlay },
     { label: 'Categories', path: '/categories', icon: Folder },
-    { label: 'Users', path: '/users', icon: Users },
+    { label: 'Users', path: '/users', icon: UserCheck2 },
+    { label: 'Guests', path: '/guests', icon: UserRoundXIcon  },
   ];
 
   const authLinks = isAuthenticated
