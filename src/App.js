@@ -12,7 +12,7 @@ import Guests from './pages/Guests';
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userEmail, setUserEmail] = useState('');
+  const [, setUserEmail] = useState('');
 
   const handleLogin = (userData) => {
     setIsAuthenticated(true);
