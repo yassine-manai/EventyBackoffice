@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Eye, UploadCloud, Calendar, MapPin, Tag, Users, DollarSign, Search, Filter, ChevronDown, X as CloseIcon } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:5050/backoffice';
+const API_BASE_URL = 'http://172.16.19.118:5050/backoffice';
 
 const Events = () => {
   const [events, setEvents] = useState([]);
@@ -21,7 +21,8 @@ const Events = () => {
     category: '',
     image: '',
     price: '',
-    capacity: 0,
+    min_capacity: '',
+    max_capacity: '',
   });
   const [imageFile, setImageFile] = useState(null);
   const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
@@ -32,7 +33,8 @@ const Events = () => {
     minPrice: '',
     maxPrice: '',
     location: '',
-    capacity: { min: '', max: '' }
+    min_capacity: '',
+    max_capacity: '',
   });
   const [activeFilters, setActiveFilters] = useState(0);
 
@@ -125,7 +127,8 @@ const Events = () => {
         ...formData,
         category: parseInt(formData.category),
         price: parseFloat(formData.price),
-        capacity: parseInt(formData.capacity)
+        min_capacity: parseInt(formData.min_capacity),
+        max_capacity: parseInt(formData.max_capacity)
       };
 
       if (selectedEvent) {
@@ -154,7 +157,8 @@ const Events = () => {
           image: eventDetails.image,
           user_id: eventDetails.user_id,
           price: eventDetails.price,
-          capacity: eventDetails.capacity
+          min_capacity: eventDetails.min_capacity,
+          max_capacity: eventDetails.max_capacity
         });
         await fetchEventUsers(eventDetails.user_id);
       }
@@ -169,7 +173,8 @@ const Events = () => {
         image: '',
         user_id: [],
         price: '',
-        capacity: ''
+        min_capacity: '',
+        max_capacity: ''
       });
       setEventUsers([]);
     }
@@ -208,8 +213,10 @@ const Events = () => {
       image: '',
       user_id: [],
       price: '',
-      capacity: ''
+      min_capacity: '',
+      max_capacity: ''
     });
+
     setImageFile(null);
     setEventUsers([]);
   };
@@ -300,12 +307,12 @@ const Events = () => {
     }
 
     // Capacity filter
-    if (filters.capacity.min !== '') {
-      result = result.filter(event => parseInt(event.capacity) >= parseInt(filters.capacity.min));
+    if (filters.min_capacity!== '') {
+      result = result.filter(event => parseInt(event.capacity) >= parseInt(filters.min_capacity));
       activeFilterCount++;
     }
-    if (filters.capacity.max !== '') {
-      result = result.filter(event => parseInt(event.capacity) <= parseInt(filters.capacity.max));
+    if (filters.max_capacity !== '') {
+      result = result.filter(event => parseInt(event.capacity) <= parseInt(filters.max_capacity));
       activeFilterCount++;
     }
 
@@ -364,8 +371,9 @@ const Events = () => {
       minPrice: '',
       maxPrice: '',
       location: '',
-      capacity: { min: '', max: '' }
-    });
+      min_capacity: '',
+      max_capacity: ''
+        });
   };
 
   const getEventStatus = (event) => {
@@ -508,7 +516,6 @@ const Events = () => {
                     <label className="text-xs text-gray-500">Min ($)</label>
                     <input
                       type="number"
-                      min="0"
                       value={filters.minPrice}
                       onChange={(e) => setFilters({ ...filters, minPrice: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg shadow-sm"
@@ -519,7 +526,6 @@ const Events = () => {
                     <label className="text-xs text-gray-500">Max ($)</label>
                     <input
                       type="number"
-                      min="0"
                       value={filters.maxPrice}
                       onChange={(e) => setFilters({ ...filters, maxPrice: e.target.value })}
                       className="w-full px-3 py-2 border rounded-lg shadow-sm"
@@ -569,11 +575,10 @@ const Events = () => {
                     <label className="text-xs text-gray-500">Min</label>
                     <input
                       type="number"
-                      min="1"
-                      value={filters.capacity.min}
+                      value={filters.min_capacity}
                       onChange={(e) => setFilters({
                         ...filters,
-                        capacity: { ...filters.capacity, min: e.target.value }
+                        capacity: { ...filters.min_capacity, min_capacity: e.target.value }
                       })}
                       className="w-full px-3 py-2 border rounded-lg shadow-sm"
                       placeholder="Min"
@@ -583,11 +588,10 @@ const Events = () => {
                     <label className="text-xs text-gray-500">Max</label>
                     <input
                       type="number"
-                      min="1"
-                      value={filters.capacity.max}
+                      value={filters.max_capacity}
                       onChange={(e) => setFilters({
                         ...filters,
-                        capacity: { ...filters.capacity, max: e.target.value }
+                        capacity: { ...filters.max_capacity, max_capacity: e.target.value }
                       })}
                       className="w-full px-3 py-2 border rounded-lg shadow-sm"
                       placeholder="Max"
@@ -666,15 +670,15 @@ const Events = () => {
                     </div>
                   )}
                   
-                  {(filters.capacity.min !== '' || filters.capacity.max !== '') && (
+                  {(filters.min_capacity !== '' || filters.max_capacity!== '') && (
                     <div className="flex items-center bg-purple-50 text-purple-700 rounded-full px-3 py-1 text-sm">
                       <span>
                         Capacity: 
-                        {filters.capacity.min !== '' ? ` ${filters.capacity.min}` : ' Any'} 
-                        {filters.capacity.max !== '' ? ` - ${filters.capacity.max}` : '+'}
+                        {filters.min_capacity !== '' ? ` ${filters.min_capacity}` : ' Any'} 
+                        {filters.max_capacity!== '' ? ` - ${filters.min_capacity}` : '+'}
                       </span>
                       <button 
-                        onClick={() => setFilters({ ...filters, capacity: { min: '', max: '' } })}
+                        onClick={() => setFilters({ ...filters, min_capacity: '', max_capacity: '' })}
                         className="ml-2 text-purple-500 hover:text-purple-700"
                       >
                         <CloseIcon className="w-3 h-3" />
@@ -725,17 +729,17 @@ const Events = () => {
               {activeFilters > 0 && (
                 <button
                   onClick={resetFilters}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                  className="px-2 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
                 >
                   Clear Filters
                 </button>
               )}
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
+          <div className="overflow-x-auto shadow-md rounded-lg">
+            <table className="max-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+               <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Image
                     </th>
@@ -755,7 +759,10 @@ const Events = () => {
                       Price
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Capacity
+                      Min Capacity
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Max Capacity
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Status
@@ -809,7 +816,13 @@ const Events = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-500">
                             <Users className="h-4 w-4 inline mr-1 text-gray-400" />
-                            {event.capacity}
+                            {event.min_capacity}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-500">
+                            <Users className="h-4 w-4 inline mr-1 text-gray-400" />
+                            {event.max_capacity}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -962,16 +975,30 @@ const Events = () => {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Capacity *
+                    Min Capacity *
                   </label>
                   <input
                     type="number"
                     required
                     min="1"
-                    value={formData.capacity}
-                    onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                    value={formData.min_capacity}
+                    onChange={(e) => setFormData({ ...formData, min_capacity: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
-                    placeholder="Enter capacity"
+                    placeholder="Enter Minimum capacity"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Max Capacity *
+                  </label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    value={formData.max_capacity}
+                    onChange={(e) => setFormData({ ...formData, max_capacity: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-purple-500 focus:border-purple-500"
+                    placeholder="Enter Max capacity"
                   />
                 </div>
 
@@ -1098,32 +1125,18 @@ const Events = () => {
                     <div className="flex items-center">
                       <Users className="h-5 w-5 mr-2 text-gray-400" />
                       <div>
-                        <div className="font-medium text-gray-700">Capacity</div>
-                        <div>{selectedEvent.capacity} attendees</div>
+                        <div className="font-medium text-gray-700">Min Capacity</div>
+                        <div>{selectedEvent.min_capacity} attendees</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center">
+                      <Users className="h-5 w-5 mr-2 text-gray-400" />
+                      <div>
+                        <div className="font-medium text-gray-700">Max Capacity</div>
+                        <div>{selectedEvent.max_capacity} attendees</div>
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="border-t pt-6">
-                  <h4 className="text-lg font-medium text-gray-900 mb-4">Assigned Users</h4>
-                  {eventUsers.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {eventUsers.map((user, index) => (
-                        <div key={index} className="flex items-center p-3 border rounded-lg">
-                          <div className="h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
-                            <Users className="h-5 w-5 text-purple-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium">{user.name || `User ${index + 1}`}</div>
-                            <div className="text-sm text-gray-500">ID: {user.user_id}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-gray-500">No users assigned to this event.</p>
-                  )}
                 </div>
               </div>
             </div>

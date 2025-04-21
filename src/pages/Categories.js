@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, Pencil, Trash2, X, Search } from 'lucide-react';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:5050/backoffice';
+const API_BASE_URL = 'http://172.16.19.118:5050/backoffice';
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);

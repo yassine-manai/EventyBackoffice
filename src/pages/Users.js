@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { Plus, Pencil, Trash2, X, Eye, Search, Filter } from 'lucide-react';
+import React, { useEffect, useState} from 'react';
+import { Plus, Pencil, Trash2, X,  Calendar, MapPin, FolderOpen ,Eye, Search, Filter } from 'lucide-react';
 import axios from 'axios';
 import '../services/User_Service';
 
-const API_BASE_URL = 'http://127.0.0.1:5050/backoffice';
+const API_BASE_URL = 'http://172.16.19.118:5050/backoffice';
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -450,69 +450,132 @@ const Users = () => {
           </div>
         </div>
       )}
-
-      {/* View Modal */}
-      {isViewModalOpen && selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-semibold text-gray-800">User Details</h3>
-              <button
-                onClick={() => setIsViewModalOpen(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-6">
-              <div>
-                <p className="text-sm font-medium text-gray-500">Email</p>
-                <p className="text-gray-800">{selectedUser.email}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Name</p>
-                <p className="text-gray-800">{selectedUser.name}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500">Balance</p>
-                <p className="text-gray-800">{selectedUser.balance}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-500 mb-3">Assigned Events</p>
-                {userEvents.length > 0 ? (
-                  <div className="grid gap-4">
-                    {userEvents.map((event) => (
-                      <div key={event.event_id} className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex gap-4">
-                          <div className="w-32 h-32 flex-shrink-0">
-                            <img
-                              src={event.image}
-                              alt={event.title}
-                              className="w-full h-full object-cover rounded-lg"
-                            />
-                          </div>
-                          <div className="flex-grow">
-                            <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                              {event.title}
-                            </h4>
-                            <p className="text-gray-600 mb-1">
-                              {formatDate(event.start_date)} to {formatDate(event.end_date)}
-                            </p>
-                            <p className="text-gray-600">{event.description}</p>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p>No events assigned.</p>
-                )}
-              </div>
+{/* View Modal */}
+{isViewModalOpen && selectedUser && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 backdrop-blur-sm transition-opacity duration-300">
+    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div className="sticky top-0 bg-white p-6 pb-4 border-b border-gray-100 flex justify-between items-center">
+        <div>
+          <h3 className="text-2xl font-bold text-gray-900">User Details</h3>
+          <p className="text-sm text-gray-500 mt-1">User ID: {selectedUser.id}</p>
+        </div>
+        <button
+          onClick={() => setIsViewModalOpen(false)}
+          className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+          aria-label="Close modal"
+        >
+          <X className="w-6 h-6" />
+        </button>
+      </div>
+      
+      <div className="p-6 space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Full Name</p>
+            <p className="text-lg text-gray-800 font-medium">{selectedUser.name || 'Not provided'}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Email Address</p>
+            <p className="text-lg text-gray-800 font-medium break-all">{selectedUser.email}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Account Balance</p>
+            <p className="text-lg font-semibold text-blue-600">
+              {typeof selectedUser.balance === 'number' 
+                ? `TND ${selectedUser.balance.toFixed(2)}` 
+                : selectedUser.balance}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">Account Status</p>
+            <div className="flex items-center">
+              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                selectedUser.isActive 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-red-100 text-red-800'
+              }`}>
+                {selectedUser.isActive ? 'Active' : 'Active'}
+              </span>
             </div>
           </div>
         </div>
-      )}
 
+        <div className="pt-4">
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-sm font-medium text-gray-500">Assigned Events</p>
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+              {userEvents.length} {userEvents.length === 1 ? 'event' : 'events'}
+            </span>
+          </div>
+          
+          {userEvents.length > 0 ? (
+            <div className="space-y-4">
+              {userEvents.map((event) => (
+                <div key={event.event_id} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-blue-200 transition-colors">
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="w-full sm:w-32 h-32 flex-shrink-0 relative overflow-hidden rounded-lg">
+                      <img
+                        src={event.image || '/placeholder-event.jpg'}
+                        alt={event.title}
+                        className="w-full h-full object-cover absolute inset-0"
+                        onError={(e) => {
+                          e.target.src = '/placeholder-event.jpg';
+                        }}
+                      />
+                    </div>
+                    <div className="flex-grow">
+                      <h4 className="text-lg font-semibold text-gray-800 mb-1 line-clamp-1">
+                        {event.title}
+                      </h4>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 mb-2">
+                        <p className="text-sm text-gray-600 flex items-center">
+                          <Calendar className="w-4 h-4 mr-1.5" />
+                          {formatDate(event.start_date)} - {formatDate(event.end_date)}
+                        </p>
+                        {event.location && (
+                          <p className="text-sm text-gray-600 flex items-center">
+                            <MapPin className="w-4 h-4 mr-1.5" />
+                            {event.location}
+                          </p>
+                        )}
+                      </div>
+                      <p className="text-gray-600 line-clamp-2">
+                        {event.description || 'No description available'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+              <FolderOpen className="w-10 h-10 mx-auto text-gray-400" />
+              <p className="mt-3 text-gray-500">No events assigned to this user</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="sticky bottom-0 bg-white p-4 border-t border-gray-100 flex justify-end space-x-3">
+        <button
+          onClick={() => setIsViewModalOpen(false)}
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Close
+        </button>
+        <button
+          onClick={() => {
+            setIsViewModalOpen(false);
+            // Add your edit handler here
+          }}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+        >
+          Edit User
+        </button>
+      </div>
+    </div>
+  </div>
+)}
       {/* Delete Modal */}
       {isDeleteModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">

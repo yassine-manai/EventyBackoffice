@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://127.0.0.1:5050/backoffice';
+const API_BASE_URL = 'http://172.16.19.118:5050/backoffice';
 
 export const fetchUsers = async () => {
   try {

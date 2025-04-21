@@ -70,9 +70,9 @@ const DashboardStats = () => {
     const fetchData = async () => {
       try {
         // Fetching the data from the API
-        const categoriesResponse = await axios.get('http://127.0.0.1:5050/backoffice/get_categories');
-        const eventsResponse = await axios.get('http://127.0.0.1:5050/backoffice/get_events');
-        const usersResponse = await axios.get('http://127.0.0.1:5050/backoffice/get_users');
+        const categoriesResponse = await axios.get('http://172.16.19.118:5050/backoffice/get_categories');
+        const eventsResponse = await axios.get('http://172.16.19.118:5050/backoffice/get_events');
+        const usersResponse = await axios.get('http://172.16.19.118:5050/backoffice/get_users');
 
         setStats({
           categories: { value: categoriesResponse.data.length, trend: 12.5 },
